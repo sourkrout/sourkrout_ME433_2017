@@ -4,9 +4,6 @@
  *
  * Created on March 29, 2017, 2:41 PM
  */
-
-#include <stdio.h>
-#include <stdlib.h>
 #include<xc.h>           // processor SFR definitions
 #include<sys/attribs.h>  // __ISR macro
 
@@ -63,11 +60,26 @@ int main() {
     DDPCONbits.JTAGEN = 0;
 
     // do your TRIS and LAT commands here
-
+    TRISAbits.TRISA4=0;
+    TRISBbits.TRISB4=1;
+    LATAbits.LATA4=0;
+    
     __builtin_enable_interrupts();
+    
+    _CP0_SET_COUNT(0);
 
     while(1) {
 	    // use _CP0_SET_COUNT(0) and _CP0_GET_COUNT() to test the PIC timing
 		  // remember the core timer runs at half the CPU speed
+        while (PORTBbits.RB4==0){
+            
+        }
+        
+        if (_CP0_GET_COUNT()<24000){
+        LATAINV=0x10;
+        _CP0_SET_COUNT(0);
+        }
+
+        
     }
 }
