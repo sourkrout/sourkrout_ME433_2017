@@ -23,7 +23,7 @@
 #pragma config OSCIOFNC = OFF // free up secondary osc pins
 #pragma config FPBDIV = DIV_1 // divide CPU freq by 1 for peripheral bus clock
 #pragma config FCKSM = CSDCMD // do not enable clock switch
-#pragma config WDTPS = PS1 // slowest wdt
+#pragma config WDTPS = PS1048576 // slowest wdt
 #pragma config WINDIS = OFF // no wdt window
 #pragma config FWDTEN = OFF // wdt off by default
 #pragma config FWDTWINSZ = WINSZ_25 // wdt window at 25%
