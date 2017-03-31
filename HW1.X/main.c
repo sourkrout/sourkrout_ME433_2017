@@ -75,7 +75,7 @@ int main() {
             
         }
         
-        if (_CP0_GET_COUNT()>24000){
+        if (_CP0_GET_COUNT()>11999){
         LATAINV=0x10;
         _CP0_SET_COUNT(0);
         }
