@@ -46,7 +46,9 @@
 #pragma config FVBUSONIO = ON // USB BUSON controlled by USB module
 
 
-static int sineWave[100], triWave[200];
+#define CS LATAbits.LATA4
+
+static volatile char sineWave[100], triWave[200];
 
 void makeSine(void);
 void makeTri(void);
@@ -56,7 +58,28 @@ void spi_init(void);
        
 
 int main(void) {
-
+    spi_init();
+    makeSine();
+    makeTri();
+    _CP0_SET_COUNT(0);
+    int i=0,j=0;
+    
+    while(1){
+        if (_CP0_GET_COUNT()==3999){
+            setVoltage(0,sineWave[i]);
+            setVoltage(1,triWave[j]);
+            i++;
+            j++;
+            
+            if (i==100){
+                i=0;
+            }
+            
+            if (j==200){
+                j=0;
+            }
+        }
+    }
     return 0;
 }
 
@@ -64,7 +87,7 @@ void makeSine (void){
     int i;
     
     for (i=0;i<100;i++){
-        sineWave[i]=(1.65*sin(2*PI*i/100)+1.65)*256/3.3;
+        sineWave[i]=(1.65*sin(2*M_PI*i/100)+1.65)*255/3.3;
     }
 }
 
@@ -78,13 +101,39 @@ void makeTri (void){
 
 void spi_init(void){
 
+    
+TRISAbits.TRISA4 = 0;
+CS=1;
+
+RPB8Rbits.RPB8R=0b0011;
+SDI1Rbits.SDI1R=0b0000;
+
 SPI1CON = 0;              
 SPI1BUF;                  
 SPI1BRG = 0x1;            
 SPI1STATbits.SPIROV = 0;
-SPI1CONbits.CKE=1;
-SPI1CONbits.CKE = 1;      
+SPI1CONbits.CKE=1;     
 SPI1CONbits.MSTEN = 1;    
 SPI1CONbits.ON = 1;
 
+}
+
+unsigned char spi_io(unsigned char o) {
+  SPI1BUF = o;
+  while(!SPI1STATbits.SPIRBF) { // wait to receive the byte
+    ;
+  }
+  return SPI1BUF;
+}
+
+void setVoltage(char channel, char voltage){
+    char data1, data2;
+    channel = channel << 7;
+    data1 = voltage >> 4;
+    data2 = voltage << 4;
+    data1 = channel | data1;
+    CS=0;
+    spi_io(data1);
+    spi_io(data2);
+    CS=1;
 }
