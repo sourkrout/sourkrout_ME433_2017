@@ -78,6 +78,7 @@ int main(void) {
             if (j==200){
                 j=0;
             }
+            _CP0_SET_COUNT(0);
         }
     }
     return 0;
