@@ -48,12 +48,12 @@
 
 #define CS LATAbits.LATA4
 
-static volatile unsigned char triWave[200];
-static volatile float sineWave[100];
+//static volatile unsigned char triWave[200];
+static volatile float sineWave[100], triWave[200];
 
 void makeSine(void);
 void makeTri(void);
-void setVoltage(char, char);
+void setVoltage(unsigned char, unsigned char);
 unsigned char spi_io(unsigned char);
 void spi_init(void);
 
@@ -68,12 +68,15 @@ int main(void) {
 
     while(1){
         if (_CP0_GET_COUNT()>=23999){
-            unsigned char test2;
-            int test1;
+            unsigned char test2, test4;
+            int test1, test3;
             test1=(int) (sineWave[i]);
             test2=(unsigned char) (test1);
             setVoltage(0,test2);
-            setVoltage(1,triWave[j]);
+            //setVoltage(1,triWave[j]);
+            test3=(int) (triWave[j]);
+            test4=(unsigned char) (test3);
+            setVoltage(1,test4);
             i++;
             j++;
             
@@ -133,8 +136,8 @@ unsigned char spi_io(unsigned char o) {
   return SPI1BUF;
 }
 
-void setVoltage(char channel, char voltage){
-    char data1, data2;
+void setVoltage(unsigned char channel, unsigned char voltage){
+    unsigned char data1, data2;
     channel = channel << 7;
     data1 = voltage >> 4;
     data2 = voltage << 4;
