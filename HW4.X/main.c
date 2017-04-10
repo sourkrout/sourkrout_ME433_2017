@@ -48,11 +48,13 @@
 
 #define CS LATAbits.LATA4
 
-static volatile char sineWave[100], triWave[200];
+static volatile unsigned char triWave[200];
+static volatile float sineWave[100];
 
 void makeSine(void);
 void makeTri(void);
 void setVoltage(char, char);
+unsigned char spi_io(unsigned char);
 void spi_init(void);
 
        
@@ -63,10 +65,14 @@ int main(void) {
     makeTri();
     _CP0_SET_COUNT(0);
     int i=0,j=0;
-    
+
     while(1){
-        if (_CP0_GET_COUNT()==3999){
-            setVoltage(0,sineWave[i]);
+        if (_CP0_GET_COUNT()>=23999){
+            unsigned char test2;
+            int test1;
+            test1=(int) (sineWave[i]);
+            test2=(unsigned char) (test1);
+            setVoltage(0,test2);
             setVoltage(1,triWave[j]);
             i++;
             j++;
@@ -88,7 +94,7 @@ void makeSine (void){
     int i;
     
     for (i=0;i<100;i++){
-        sineWave[i]=(1.65*sin(2*M_PI*i/100)+1.65)*255/3.3;
+        sineWave[i]=((1.65*sin(2*M_PI*i/100)+1.65)*255/3.3);
     }
 }
 
@@ -96,7 +102,7 @@ void makeTri (void){
     int i;
     
     for (i=0;i<200;i++){
-        triWave[i]=i*256/200;
+        triWave[i]=(i*256/200);
     }
 }
 
@@ -133,6 +139,7 @@ void setVoltage(char channel, char voltage){
     data1 = voltage >> 4;
     data2 = voltage << 4;
     data1 = channel | data1;
+    data1 = data1 | 0b00110000;
     CS=0;
     spi_io(data1);
     spi_io(data2);
