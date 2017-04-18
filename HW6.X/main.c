@@ -46,7 +46,9 @@
 #pragma config FUSBIDIO = ON // USB pins controlled by USB module
 #pragma config FVBUSONIO = ON // USB BUSON controlled by USB module
 
-
+void drawChar(unsigned short, unsigned short, unsigned short, unsigned char);
+void drawString(unsigned short, unsigned short, unsigned short, unsigned char *);
+void drawBar(unsigned short, unsigned short, int);
 /*
  * 
  */
@@ -55,9 +57,56 @@ int main(void) {
     SPI1_init();
     LCD_init();
     
-    LCD_clearScreen(CYAN);
+    LCD_clearScreen(MAGENTA);
     
-    while(1){};
+    unsigned char msg[100];
+    
+    while(1){
+        
+        int i;
+        for (i=0;i<101;i++){
+        _CP0_SET_COUNT(0);
+        sprintf(msg,"Hello world %d!",i);
+        drawString(28,32,BLACK,msg);
+        drawBar(28,42,i);
+        while(_CP0_GET_COUNT()<4799999){};
+        }
+        LCD_clearScreen(MAGENTA);
+    };
     
     return 0;
+}
+
+void drawChar(unsigned short x, unsigned short y, unsigned short color, unsigned char asc){
+    int i,j;
+    asc=asc-0x20;
+    if (x+5<=128){
+        if (y+8<=128){
+            for (i=0;i<5;i++){
+                for (j=0;j<8;j++){
+                    if ((ASCII[asc][i]>>j)&0b1){
+                        LCD_drawPixel(x+i,y+j,color);  
+                    } else {
+                        LCD_drawPixel(x+i,y+j,MAGENTA);
+                    }
+                }
+            }
+        }
+    }
+}
+
+void drawString(unsigned short x, unsigned short y, unsigned short color, unsigned char * addr){
+    int i=0;
+    while(addr[i]){
+        drawChar(x,y,BLACK,addr[i]);
+        x=x+6;
+        i++;
+    }
+}
+
+void drawBar(unsigned short x, unsigned short y, int barLength){
+    int i;
+    for (i=0;i<5;i++){
+        LCD_drawPixel(x+barLength,y+i,CYAN);
+    }
 }
