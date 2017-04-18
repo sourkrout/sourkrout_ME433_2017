@@ -19,6 +19,8 @@
       <itemPath>Makefile</itemPath>
     </logicalFolder>
     <itemPath>main.c</itemPath>
+    <itemPath>ILI9163C.c</itemPath>
+    <itemPath>ILI9163C.h</itemPath>
   </logicalFolder>
   <projectmakefile>Makefile</projectmakefile>
   <confs>

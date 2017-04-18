@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <xc.h>
+#include "ILI9163C.h"
 
 // DEVCFG0
 #pragma config DEBUG = OFF // no debugging
@@ -51,6 +52,12 @@
  */
 int main(void) {
 
+    SPI1_init();
+    LCD_init();
+    
+    LCD_clearScreen(CYAN);
+    
+    while(1){};
     
     return 0;
 }
