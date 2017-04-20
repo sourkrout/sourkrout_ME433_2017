@@ -55,7 +55,10 @@ void I2C_read_multiple(unsigned char , unsigned char *, int);
 void drawChar(unsigned short, unsigned short, unsigned short, unsigned char);
 void drawString(unsigned short, unsigned short, unsigned short, unsigned char *);
 void constructShorts(unsigned char *, int, signed short *);
-void drawXBar(short);
+void drawXBar(signed short);
+void drawYBar(signed short);
+
+static volatile int barL, barL2;
 /*
  * 
  */
@@ -98,6 +101,16 @@ int main(void) {
         drawString(28,92,BLACK,msg);*/
         
         drawXBar(accelX);
+        drawYBar(accelY);
+        
+        /*sprintf(msg,"accelX: %d   ",accelX);
+        drawString(28,92,BLACK,msg);
+        sprintf(msg,"xbar length: %d   ",barL);
+        drawString(28,82,BLACK,msg);
+        sprintf(msg,"accelY: %d   ",accelY);
+        drawString(28,112,BLACK,msg);
+        sprintf(msg,"ybar length: %d   ",barL2);
+        drawString(28,102,BLACK,msg);*/
         
         while(_CP0_GET_COUNT()<4799999){};
     };
@@ -182,23 +195,30 @@ void constructShorts(unsigned char * data, int length, signed short * shorts){
     }
 }
 
-void drawXBar(short accelX){
+void drawXBar(signed short accelX){
     int i,j,barInt;
-    float barLength;
+    float barLength, accelxf;
     
-    barLength=-20*(accelX/16384);
+    accelxf=(float) accelX;
+    barLength=40*(accelxf/16384);
     barInt=(int) barLength;
     
-    for (i=0;i<80;i++){
-        for (j=0;j<5;j++){
-        LCD_drawPixel(20+i,64+j,MAGENTA);
-        }
-    }
+    barL=barInt;
     
     if (barInt>0){
         for (j=0;j<barInt;j++){
         for (i=0;i<5;i++){
         LCD_drawPixel(64+j,64+i,CYAN);
+        }
+        }
+        for (j=0;j<64;j++){
+        for (i=0;i<5;i++){
+        LCD_drawPixel(64-j,64+i,MAGENTA);
+        }
+        }
+        for (j=barInt;j<64;j++){
+        for (i=0;i<5;i++){
+        LCD_drawPixel(64+j,64+i,MAGENTA);
         }
         }
     }
@@ -210,13 +230,64 @@ void drawXBar(short accelX){
         LCD_drawPixel(64-j,64+i,CYAN);
         }
         }
+        for (j=0;j<64;j++){
+        for (i=0;i<5;i++){
+        LCD_drawPixel(64+j,64+i,MAGENTA);
+        }
+        }
+        for (j=barInt;j<64;j++){
+        for (i=0;i<5;i++){
+        LCD_drawPixel(64-j,64+i,MAGENTA);
+        }
+        }
     }
     
 }
 
-/*void drawYBar(short accelY){
-    int i;
-    for (i=0;i<5;i++){
-        LCD_drawPixel(x+barLength,y+i,CYAN);
+void drawYBar(signed short accelY){
+    int i,j,barInt;
+    float barLength, accelyf;
+    
+    accelyf=(float) accelY;
+    barLength=40*(accelyf/16384);
+    barInt=(int) barLength;
+    
+    barL2=barInt;
+    
+    if (barInt>0){
+        for (j=0;j<barInt;j++){
+        for (i=0;i<5;i++){
+        LCD_drawPixel(64+i,64+j,GREEN);
+        }
+        }
+        for (j=0;j<64;j++){
+        for (i=0;i<5;i++){
+        LCD_drawPixel(64+i,64-j,MAGENTA);
+        }
+        }
+        for (j=barInt;j<64;j++){
+        for (i=0;i<5;i++){
+        LCD_drawPixel(64+i,64+j,MAGENTA);
+        }
+        }
     }
-}*/
+    
+    if (barInt<0){
+        barInt=-barInt;
+        for (j=0;j<barInt;j++){
+        for (i=0;i<5;i++){
+        LCD_drawPixel(64+i,64-j,GREEN);
+        }
+        }
+        for (j=0;j<64;j++){
+        for (i=0;i<5;i++){
+        LCD_drawPixel(64+i,64+j,MAGENTA);
+        }
+        }
+        for (j=barInt;j<64;j++){
+        for (i=0;i<5;i++){
+        LCD_drawPixel(64+i,64-j,MAGENTA);
+        }
+        }
+    }
+}
