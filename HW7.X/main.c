@@ -55,6 +55,7 @@ void I2C_read_multiple(unsigned char , unsigned char *, int);
 void drawChar(unsigned short, unsigned short, unsigned short, unsigned char);
 void drawString(unsigned short, unsigned short, unsigned short, unsigned char *);
 void constructShorts(unsigned char *, int, signed short *);
+void drawXBar(short);
 /*
  * 
  */
@@ -81,7 +82,7 @@ int main(void) {
         accelY=gyroShorts[5];
         accelZ=gyroShorts[6];
         
-        sprintf(msg,"temp: %d   ",temp);
+        /*sprintf(msg,"temp: %d   ",temp);
         drawString(28,32,BLACK,msg);
         sprintf(msg,"gyroX: %d   ",gyroX);
         drawString(28,42,BLACK,msg);
@@ -94,7 +95,9 @@ int main(void) {
         sprintf(msg,"accelY: %d   ",accelY);
         drawString(28,82,BLACK,msg);
         sprintf(msg,"accelZ: %d   ",accelZ);
-        drawString(28,92,BLACK,msg);
+        drawString(28,92,BLACK,msg);*/
+        
+        drawXBar(accelX);
         
         while(_CP0_GET_COUNT()<4799999){};
     };
@@ -178,3 +181,42 @@ void constructShorts(unsigned char * data, int length, signed short * shorts){
         shorts[i]=store1;
     }
 }
+
+void drawXBar(short accelX){
+    int i,j,barInt;
+    float barLength;
+    
+    barLength=-20*(accelX/16384);
+    barInt=(int) barLength;
+    
+    for (i=0;i<80;i++){
+        for (j=0;j<5;j++){
+        LCD_drawPixel(20+i,64+j,MAGENTA);
+        }
+    }
+    
+    if (barInt>0){
+        for (j=0;j<barInt;j++){
+        for (i=0;i<5;i++){
+        LCD_drawPixel(64+j,64+i,CYAN);
+        }
+        }
+    }
+    
+    if (barInt<0){
+        barInt=-barInt;
+        for (j=0;j<barInt;j++){
+        for (i=0;i<5;i++){
+        LCD_drawPixel(64-j,64+i,CYAN);
+        }
+        }
+    }
+    
+}
+
+/*void drawYBar(short accelY){
+    int i;
+    for (i=0;i<5;i++){
+        LCD_drawPixel(x+barLength,y+i,CYAN);
+    }
+}*/
