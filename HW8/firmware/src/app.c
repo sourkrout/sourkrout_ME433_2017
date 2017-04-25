@@ -54,13 +54,22 @@ SUBSTITUTE GOODS, TECHNOLOGY, SERVICES, OR ANY CLAIMS BY THIRD PARTIES
 // *****************************************************************************
 
 #include "app.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <xc.h>
+//#include "i2c_master_noint.h"
+//#include "ILI9163C.h"
 
 // *****************************************************************************
 // *****************************************************************************
 // Section: Global Data Definitions
 // *****************************************************************************
 // *****************************************************************************
-
+#define MAGENTA   0xF81F
+static volatile int barL, barL2;
+unsigned char gyroData[14], msg[100];
+signed short gyroShorts[7], temp, gyroX, gyroY, gyroZ, accelX, accelY, accelZ;
 // *****************************************************************************
 /* Application Data
 
@@ -121,9 +130,11 @@ void APP_Initialize ( void )
     /* TODO: Initialize your application's state machine and other
      * parameters.
      */
-    TRISAbits.TRISA4=0;
-    TRISBbits.TRISB4=1;
-    LATAbits.LATA4=0;
+    i2c_setup();
+    initChip();
+    SPI1_init();
+    LCD_init();
+    LCD_clearScreen(MAGENTA);
     
     _CP0_SET_COUNT(0);
     
@@ -160,16 +171,25 @@ void APP_Tasks ( void )
 
         case APP_STATE_SERVICE_TASKS:
         {
-            while(1) {
-                        while (PORTBbits.RB4==0){};
+           
+    while(1){
+        _CP0_SET_COUNT(0);
         
-                        if (_CP0_GET_COUNT()>11999){
-                            LATAINV=0x10;
-                            _CP0_SET_COUNT(0);
-                        }
-
+        I2C_read_multiple(0x20,gyroData,14);
+        constructShorts(gyroData,14,gyroShorts);
+        temp=gyroShorts[0];
+        gyroX=gyroShorts[1];
+        gyroY=gyroShorts[2];
+        gyroZ=gyroShorts[3];
+        accelX=gyroShorts[4];
+        accelY=gyroShorts[5];
+        accelZ=gyroShorts[6];
+                
+        drawXBar(accelX);
+        drawYBar(accelY);
         
-                      }
+        while(_CP0_GET_COUNT()<4799999){};
+    };
             break;
         }
 
