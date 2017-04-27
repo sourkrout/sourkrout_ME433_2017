@@ -51,6 +51,7 @@ SUBSTITUTE GOODS, TECHNOLOGY, SERVICES, OR ANY CLAIMS BY THIRD PARTIES
 #include "app.h"
 #include <stdio.h>
 #include <xc.h>
+#include "i2c_master_noint.h"
 
 // *****************************************************************************
 // *****************************************************************************
@@ -60,8 +61,18 @@ SUBSTITUTE GOODS, TECHNOLOGY, SERVICES, OR ANY CLAIMS BY THIRD PARTIES
 
 uint8_t APP_MAKE_BUFFER_DMA_READY dataOut[APP_READ_BUFFER_SIZE];
 uint8_t APP_MAKE_BUFFER_DMA_READY readBuffer[APP_READ_BUFFER_SIZE];
-int len, i = 0;
+int len, i = 0, go=0;
 int startTime = 0;
+
+#define SLAVE_ADDR 0b1101011
+
+void i2c_setup(void);
+void initChip(void);
+void I2C_read_multiple(unsigned char , unsigned char *, int);
+void constructShorts(unsigned char *, int, signed short *);
+
+unsigned char gyroData[14], msg[100];
+signed short gyroShorts[7], temp, gyroX, gyroY, gyroZ, accelX, accelY, accelZ;
 
 // *****************************************************************************
 /* Application Data
@@ -330,6 +341,9 @@ void APP_Initialize(void) {
 
     /* Set up the read buffer */
     appData.readBuffer = &readBuffer[0];
+    
+    i2c_setup();
+    initChip();
 
     startTime = _CP0_GET_COUNT();
 }
@@ -408,7 +422,7 @@ void APP_Tasks(void) {
             /* Check if a character was received or a switch was pressed.
              * The isReadComplete flag gets updated in the CDC event handler. */
 
-            if (appData.isReadComplete || _CP0_GET_COUNT() - startTime > (48000000 / 2 / 5)) {
+            if (appData.isReadComplete || _CP0_GET_COUNT() - startTime > (48000000 / 2 / 100)) {
                 appData.state = APP_STATE_SCHEDULE_WRITE;
             }
 
@@ -427,18 +441,56 @@ void APP_Tasks(void) {
             appData.isWriteComplete = false;
             appData.state = APP_STATE_WAIT_FOR_WRITE_COMPLETE;
 
-            len = sprintf(dataOut, "%d\r\n", i);
-            i++;
+            //len = sprintf(dataOut, "%d\r\n", i);
+            //i++;
             if (appData.isReadComplete) {
-                USB_DEVICE_CDC_Write(USB_DEVICE_CDC_INDEX_0,
-                        &appData.writeTransferHandle,
-                        appData.readBuffer, 1,
-                        USB_DEVICE_CDC_TRANSFER_FLAGS_DATA_COMPLETE);
-            } else {
+                len=1;
+                dataOut[0]=0;
                 USB_DEVICE_CDC_Write(USB_DEVICE_CDC_INDEX_0,
                         &appData.writeTransferHandle, dataOut, len,
                         USB_DEVICE_CDC_TRANSFER_FLAGS_DATA_COMPLETE);
-                startTime = _CP0_GET_COUNT();
+                if (appData.readBuffer[0]=='r'){
+                    go=1;
+                } 
+                
+            } else {
+                /*USB_DEVICE_CDC_Write(USB_DEVICE_CDC_INDEX_0,
+                        &appData.writeTransferHandle, dataOut, len,
+                        USB_DEVICE_CDC_TRANSFER_FLAGS_DATA_COMPLETE);
+                startTime = _CP0_GET_COUNT();*/
+                if (go==1 & i<100){
+                    I2C_read_multiple(0x20,gyroData,14);
+                    constructShorts(gyroData,14,gyroShorts);
+                    temp=gyroShorts[0];
+                    gyroX=gyroShorts[1];
+                    gyroY=gyroShorts[2];
+                    gyroZ=gyroShorts[3];
+                    accelX=gyroShorts[4];
+                    accelY=gyroShorts[5];
+                    accelZ=gyroShorts[6];
+                    len = sprintf(dataOut, "%d\t%d\t%d\t%d\t%d\t%d\t%d\r\n", i,accelX,accelY,accelZ,gyroX,gyroY,gyroZ);
+                    i++;
+                    USB_DEVICE_CDC_Write(USB_DEVICE_CDC_INDEX_0,
+                        &appData.writeTransferHandle, dataOut, len,
+                        USB_DEVICE_CDC_TRANSFER_FLAGS_DATA_COMPLETE);
+                    startTime = _CP0_GET_COUNT();
+                } else if (go==1 & i==100){
+                    go=0;
+                    i=0;
+                    len=1;
+                    dataOut[0]=0;
+                    USB_DEVICE_CDC_Write(USB_DEVICE_CDC_INDEX_0,
+                        &appData.writeTransferHandle, dataOut, len,
+                        USB_DEVICE_CDC_TRANSFER_FLAGS_DATA_COMPLETE);
+                    startTime = _CP0_GET_COUNT();
+                } else {
+                    len=1;
+                    dataOut[0]=0;
+                    USB_DEVICE_CDC_Write(USB_DEVICE_CDC_INDEX_0,
+                        &appData.writeTransferHandle, dataOut, len,
+                        USB_DEVICE_CDC_TRANSFER_FLAGS_DATA_COMPLETE);
+                    startTime = _CP0_GET_COUNT();
+                }
             }
             break;
 
@@ -465,6 +517,56 @@ void APP_Tasks(void) {
 }
 
 
+
+void i2c_setup(void) {
+  i2c_master_setup();
+  ANSELBbits.ANSB2 = 0;
+  ANSELBbits.ANSB3 = 0;
+}
+
+void initChip(void){
+    i2c_master_start();
+    i2c_master_send(SLAVE_ADDR << 1);
+    i2c_master_send(0x10);
+    i2c_master_send(0x82); 
+    i2c_master_stop();
+    
+    i2c_master_start();
+    i2c_master_send(SLAVE_ADDR << 1);
+    i2c_master_send(0x11);
+    i2c_master_send(0x88); 
+    i2c_master_stop();
+}
+
+void I2C_read_multiple(unsigned char reg, unsigned char * data, int length){
+    int i;
+    
+    i2c_master_start();
+    i2c_master_send(SLAVE_ADDR << 1);
+    i2c_master_send(reg);
+    i2c_master_restart();
+    i2c_master_send((SLAVE_ADDR << 1) | 1);
+    
+    for (i=0;i<(length-1);i++){
+        *(data+i)=i2c_master_recv();
+        i2c_master_ack(0);
+    }
+    *(data+(length-1))=i2c_master_recv();
+    i2c_master_ack(1);
+    i2c_master_stop();   
+}
+
+void constructShorts(unsigned char * data, int length, signed short * shorts){
+    int i, maxi;
+    maxi=length/2;
+    
+    for (i=0;i<maxi;i++){
+        signed short store1;
+        store1=data[((2*i)+1)]<<8;
+        store1=store1 | (data[(2*i)]);
+        shorts[i]=store1;
+    }
+}
 
 /*******************************************************************************
  End of File

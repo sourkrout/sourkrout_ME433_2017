@@ -85,7 +85,7 @@ SUBSTITUTE GOODS, TECHNOLOGY, SERVICES, OR ANY CLAIMS BY THIRD PARTIES
 #pragma config FPLLMUL =    MUL_24
 #pragma config FPLLODIV =   DIV_2
 #pragma config UPLLIDIV =   DIV_2
-#pragma config UPLLEN =     OFF
+#pragma config UPLLEN =     ON
 /*** DEVCFG3 ***/
 
 #pragma config USERID =     0x0000
